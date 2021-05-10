@@ -37,7 +37,7 @@ public class AccessController {
 	}
 
 	@RequestMapping(value = "/authenticate", method = RequestMethod.POST)
-	public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) throws Exception {
+	public ResponseEntity<?> authenticate(@RequestBody AuthenticationRequest authenticationRequest) throws Exception {
 		try {
 			authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
@@ -53,7 +53,7 @@ public class AccessController {
 	}
 
 	@RequestMapping(value = "/check_token", method = RequestMethod.GET)
-	public ResponseEntity<?> createAuthenticationToken(@NotBlank(message = "access_token must be determined.") @RequestParam("access_token") String token) throws Exception {
+	public ResponseEntity<?> checkToken(@NotBlank(message = "access_token must be determined.") @RequestParam("access_token") String token) throws Exception {
 		final String username = jwtTokenUtil.extractUsername(token);
 		Assert.notNull(username, "access_token is not valid.");
 		Date expirationDate = jwtTokenUtil.extractExpiration(token);
@@ -64,4 +64,21 @@ public class AccessController {
 		}
 		return ResponseEntity.ok().build();
 	}
+
+	@RequestMapping(value = "/user_info", method = RequestMethod.GET)
+	public ResponseEntity<?> userInfo(@NotBlank(message = "access_token must be determined.") @RequestParam("access_token") String token) throws Exception {
+		final String username = jwtTokenUtil.extractUsername(token);
+		Assert.notNull(username, "access_token is not valid.");
+		Date expirationDate = jwtTokenUtil.extractExpiration(token);
+		long diffInMillies = expirationDate.getTime() - Calendar.getInstance().getTimeInMillis();
+		long diff = TimeUnit.MILLISECONDS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+		if (diff <= 0){
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+		}
+		final UserDetails userDetails = userDetailsService
+				.loadUserByUsername(username);
+
+		return ResponseEntity.status(HttpStatus.OK).body(userDetails);
+	}
+
 }
