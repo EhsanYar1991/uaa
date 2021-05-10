@@ -1,4 +1,4 @@
-package com.mciws.uaa.filters;
+package com.mciws.uaa.filter;
 
 import com.mciws.uaa.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;

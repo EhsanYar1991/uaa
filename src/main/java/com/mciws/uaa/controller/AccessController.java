@@ -1,11 +1,10 @@
 package com.mciws.uaa.controller;
 
-import com.mciws.uaa.models.AuthenticationRequest;
-import com.mciws.uaa.models.AuthenticationResponse;
+import com.mciws.uaa.model.AuthenticationRequest;
+import com.mciws.uaa.model.AuthenticationResponse;
 import com.mciws.uaa.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -3,8 +3,7 @@ package com.mciws.uaa.config;
 import com.mciws.uaa.config.security.MciActiveDirectoryLdapAuthenticationProvider;
 import com.mciws.uaa.config.security.MciFilterBasedLdapUserSearch;
 import com.mciws.uaa.config.security.PlainTextPasswordEncoder;
-import com.mciws.uaa.config.security.SimpleCorsFilter;
-import com.mciws.uaa.filters.JwtRequestFilter;
+import com.mciws.uaa.filter.JwtRequestFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,14 +26,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
+    private final JwtRequestFilter jwtRequestFilter;
+    private final LdapContextSource ldapContextSource;
+
     @Autowired
-    private JwtRequestFilter jwtRequestFilter;
-    @Autowired
-    private LdapContextSource ldapContextSource;
+    public SecurityConfiguration(JwtRequestFilter jwtRequestFilter, LdapContextSource ldapContextSource) {
+        this.jwtRequestFilter = jwtRequestFilter;
+        this.ldapContextSource = ldapContextSource;
+    }
 
 
     @Autowired
-    public void globalUserDetails(AuthenticationManagerBuilder auth) throws Exception {
+    public void globalUserDetails(AuthenticationManagerBuilder auth) {
         auth
                 .authenticationProvider(activeDirectoryLdapAuthenticationProvider());
     }
@@ -44,8 +47,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         httpSecurity.csrf().disable()
                 .authorizeRequests().antMatchers(
                 "/authenticate",
-                "/oauth/**",
-                "/swagger-ui.html"
+                "/oauth/token"
                 ).permitAll().
                 anyRequest()
                 .authenticated()
@@ -56,6 +58,13 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
+//        httpSecurity
+//                .oauth2ResourceServer()
+//                .jwt()
+//                .jwtAuthenticationConverter(authenticationConverter())
+//                .and()
+//                .and()
+//                .oauth2Client();
     }
 
 
@@ -87,6 +96,5 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     public PasswordEncoder passwordEncoder() {
         return new PlainTextPasswordEncoder();
     }
-
 
 }
