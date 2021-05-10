@@ -44,18 +44,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf().disable()
-                .authorizeRequests().antMatchers(
-                "/authenticate",
-                "/oauth/token"
-                ).permitAll().
-                anyRequest()
-                .authenticated()
+        httpSecurity
+                .csrf().disable()
+                .authorizeRequests().antMatchers("/authenticate", "/check_token").permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .exceptionHandling()
                 .and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
 //        httpSecurity
