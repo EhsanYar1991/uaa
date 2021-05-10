@@ -1,8 +1,8 @@
 package com.mciws.uaa.controller;
 
 import com.mciws.uaa.common.GeneralResponse;
-import com.mciws.uaa.model.AuthenticationRequest;
-import com.mciws.uaa.model.AuthenticationResponse;
+import com.mciws.uaa.common.model.AuthenticationRequest;
+import com.mciws.uaa.common.model.AuthenticationResponse;
 import com.mciws.uaa.util.JwtUtil;
 
 import io.jsonwebtoken.lang.Assert;
@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
@@ -34,8 +35,8 @@ public class AccessController {
     private UserDetailsService userDetailsService;
 
     @RequestMapping({"/hello"})
-    public String firstPage() {
-        return "Hello World";
+    public String firstPage(Authentication authentication) {
+        return "Hello " + authentication.getName();
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
@@ -58,7 +59,7 @@ public class AccessController {
     }
 
     @RequestMapping(value = "/check_token", method = RequestMethod.GET)
-    public ResponseEntity<?> checkToken(@NotBlank(message = "access_token must be determined.") @RequestParam("access_token") String token) throws Exception {
+    public ResponseEntity<?> checkToken(@NotBlank(message = "Authorization must be determined.") @RequestHeader("Authorization") String token) throws Exception {
         final String username = jwtTokenUtil.extractUsername(token);
         Assert.notNull(username, "access_token is not valid.");
         Date expirationDate = jwtTokenUtil.extractExpiration(token);

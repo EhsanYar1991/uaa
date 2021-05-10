@@ -101,8 +101,8 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
 
     @SuppressWarnings("deprecation")
     @Override
-    protected Collection<? extends GrantedAuthority> loadUserAuthorities(DirContextOperations userData, String username,
-                                                                         String password) {
+    protected Collection<? extends GrantedAuthority> loadUserAuthorities(DirContextOperations userData, String username, String password) {
+        // todo add internal role management
         String[] groups = userData.getStringAttributes("memberOf");
         if (groups == null) {
             this.logger.debug("No values for 'memberOf' attribute.");

@@ -1,4 +1,4 @@
-package com.mciws.uaa.model;
+package com.mciws.uaa.common.model;
 
 import java.io.Serializable;
 
