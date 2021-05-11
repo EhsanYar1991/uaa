@@ -9,6 +9,7 @@ import org.springframework.ldap.core.support.DefaultDirObjectFactory;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.support.LdapUtils;
 import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -262,5 +263,8 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
     public void setConvertSubErrorCodesToExceptions(boolean convertSubErrorCodesToExceptions) {
         this.convertSubErrorCodesToExceptions = convertSubErrorCodesToExceptions;
     }
+
+
+
 
 }

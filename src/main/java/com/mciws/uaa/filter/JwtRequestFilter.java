@@ -1,5 +1,6 @@
 package com.mciws.uaa.filter;
 
+import com.mciws.uaa.repository.redis.OnlineUserRepository;
 import com.mciws.uaa.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

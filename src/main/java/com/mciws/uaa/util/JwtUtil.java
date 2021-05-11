@@ -1,12 +1,16 @@
 package com.mciws.uaa.util;
 
+import com.mciws.uaa.domain.redis.OnlineUser;
+import com.mciws.uaa.repository.redis.OnlineUserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +20,10 @@ import java.util.function.Function;
 public class JwtUtil {
 
     @Value("${jwt.secret-key:secret}")
-    private String secretKey ;
+    private String secretKey;
+
+    @Autowired
+    private OnlineUserRepository onlineUserRepository;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -30,29 +37,37 @@ public class JwtUtil {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
     private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+//        return extractExpiration(token).before(Calendar.getInstance().getTime());
+        return onlineUserRepository.findById(token) != null;
     }
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-		claims.put("user", userDetails);
-        return createToken(claims, userDetails.getUsername());
+        claims.put("user", userDetails);
+        String token = createToken(claims, userDetails.getUsername());
+        onlineUserRepository.save(new OnlineUser(token, userDetails));
+        return token;
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(SignatureAlgorithm.HS256, secretKey).compact();
     }
 
-    public Boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateToken(String token, UserDetails userDetails) {
+        boolean isValidate = false;
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        if (username.equals(userDetails.getUsername()) && onlineUserRepository.findById(token) != null) {
+            isValidate = true;
+            onlineUserRepository.save(new OnlineUser(token, userDetails));
+        }
+        return isValidate;
     }
 }

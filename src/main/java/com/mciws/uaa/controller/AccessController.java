@@ -3,6 +3,8 @@ package com.mciws.uaa.controller;
 import com.mciws.uaa.common.GeneralResponse;
 import com.mciws.uaa.common.model.AuthenticationRequest;
 import com.mciws.uaa.common.model.AuthenticationResponse;
+import com.mciws.uaa.domain.redis.OnlineUser;
+import com.mciws.uaa.repository.redis.OnlineUserRepository;
 import com.mciws.uaa.util.JwtUtil;
 
 import io.jsonwebtoken.lang.Assert;
@@ -62,15 +64,13 @@ public class AccessController {
     public ResponseEntity<?> checkToken(@NotBlank(message = "Authorization must be determined.") @RequestHeader("Authorization") String token) throws Exception {
         final String username = jwtTokenUtil.extractUsername(token);
         Assert.notNull(username, "access_token is not valid.");
-        Date expirationDate = jwtTokenUtil.extractExpiration(token);
-        long diffInMillies = expirationDate.getTime() - Calendar.getInstance().getTimeInMillis();
-        long diff = TimeUnit.MILLISECONDS.convert(diffInMillies, TimeUnit.MILLISECONDS);
-        if (diff <= 0) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        }
-        return ResponseEntity.ok(
-                new GeneralResponse<>(HttpStatus.OK)
-        );
+        final UserDetails userDetails = userDetailsService
+                .loadUserByUsername(username);
+        return jwtTokenUtil.validateToken(token,userDetails)
+                ?
+                ResponseEntity.ok(new GeneralResponse<>(HttpStatus.OK))
+                :
+                ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(HttpStatus.UNAUTHORIZED.getReasonPhrase());
     }
 
     @RequestMapping(value = "/user_info", method = RequestMethod.GET)
