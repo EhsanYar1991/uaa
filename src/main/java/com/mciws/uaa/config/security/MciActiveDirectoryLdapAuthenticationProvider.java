@@ -1,5 +1,8 @@
 package com.mciws.uaa.config.security;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.mciws.uaa.service.LoginAttemptService;
 import org.springframework.core.log.LogMessage;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.ldap.CommunicationException;
@@ -13,6 +16,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.SpringSecurityLdapTemplate;
@@ -27,6 +32,7 @@ import javax.naming.directory.SearchControls;
 import javax.naming.ldap.InitialLdapContext;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,12 +68,14 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
 
     private final LdapContextSource ldapContextSource;
     private final PasswordEncoder passwordEncoder;
+    private final LoginAttemptService loginAttemptService;
 
-    public MciActiveDirectoryLdapAuthenticationProvider(final LdapContextSource ldapContextSource, PasswordEncoder passwordEncoder) {
+    public MciActiveDirectoryLdapAuthenticationProvider(final LdapContextSource ldapContextSource, PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService) {
         this.ldapContextSource = ldapContextSource;
         this.url = String.join(",",ldapContextSource.getUrls());
         this.domain = ldapContextSource.getBaseLdapPathAsString();
         this.passwordEncoder = passwordEncoder;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @Override
@@ -76,6 +84,10 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
         String password = (String) auth.getCredentials();
         DirContext ctx = null;
         try {
+            if (loginAttemptService.isBlocked(username)){
+                loginAttemptService.loginFailed(username);
+                throw new AuthenticationException("User has been blocked for 20 minutes.");
+            }
             ctx = bindAsUser(username, password);
             DirContextOperations dirContextOperations = searchForUser(ctx, username);
             if (dirContextOperations == null || dirContextOperations.getNameInNamespace() == null || dirContextOperations.getNameInNamespace().trim().isEmpty()) {
@@ -86,12 +98,18 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
                     finalDn,
                     passwordEncoder.encode(password));
             if (dirContext == null) {
+                loginAttemptService.loginFailed(username);
                 throw new BadCredentialsException("Credential Error");
             }
             return dirContextOperations;
+        } catch (org.springframework.ldap.AuthenticationException ex) {
+            loginAttemptService.loginFailed(username);
+            throw badLdapConnection(ex);
         } catch (CommunicationException ex) {
+            loginAttemptService.loginFailed(username);
             throw badLdapConnection(ex);
         } catch (NamingException ex) {
+            loginAttemptService.loginFailed(username);
             this.logger.error("Failed to locate directory entry for authenticated user: " + username, ex);
             throw badCredentials(ex);
         } finally {
@@ -264,7 +282,16 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
         this.convertSubErrorCodesToExceptions = convertSubErrorCodesToExceptions;
     }
 
-
+    @Override
+    public Authentication createSuccessfulAuthentication(UsernamePasswordAuthenticationToken authentication,
+                                                            UserDetails user) {
+        Object password =  authentication.getCredentials();
+        UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(user, password,
+                new NullAuthoritiesMapper().mapAuthorities(user.getAuthorities()));
+        result.setDetails(authentication.getDetails());
+        loginAttemptService.loginSucceeded(authentication.getName());
+        return result;
+    }
 
 
 }

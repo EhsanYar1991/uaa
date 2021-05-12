@@ -4,6 +4,7 @@ import com.mciws.uaa.config.security.MciActiveDirectoryLdapAuthenticationProvide
 import com.mciws.uaa.config.security.MciFilterBasedLdapUserSearch;
 import com.mciws.uaa.config.security.PlainTextPasswordEncoder;
 import com.mciws.uaa.filter.JwtRequestFilter;
+import com.mciws.uaa.service.LoginAttemptService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,11 +29,13 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private final JwtRequestFilter jwtRequestFilter;
     private final LdapContextSource ldapContextSource;
+    private final LoginAttemptService loginAttemptService;
 
     @Autowired
-    public SecurityConfiguration(JwtRequestFilter jwtRequestFilter, LdapContextSource ldapContextSource) {
+    public SecurityConfiguration(JwtRequestFilter jwtRequestFilter, LdapContextSource ldapContextSource, LoginAttemptService loginAttemptService) {
         this.jwtRequestFilter = jwtRequestFilter;
         this.ldapContextSource = ldapContextSource;
+        this.loginAttemptService = loginAttemptService;
     }
 
 
@@ -66,7 +69,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Bean
     public AuthenticationProvider activeDirectoryLdapAuthenticationProvider() {
         MciActiveDirectoryLdapAuthenticationProvider authenticationProvider =
-                new MciActiveDirectoryLdapAuthenticationProvider(ldapContextSource, passwordEncoder());
+                new MciActiveDirectoryLdapAuthenticationProvider(ldapContextSource, passwordEncoder(), loginAttemptService);
         authenticationProvider.setConvertSubErrorCodesToExceptions(true);
         authenticationProvider.setUseAuthenticationRequestCredentials(true);
         return authenticationProvider;
