@@ -1,7 +1,5 @@
 package com.mciws.uaa.config.security;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import com.mciws.uaa.service.LoginAttemptService;
 import org.springframework.core.log.LogMessage;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
@@ -32,7 +30,6 @@ import javax.naming.directory.SearchControls;
 import javax.naming.ldap.InitialLdapContext;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,19 +57,17 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
 
     private static final String SEARCH_FILTER_KEY = "filter";
 
-    private final String domain ;
+    private final String domain;
 
     private final String url;
-
-    private boolean convertSubErrorCodesToExceptions;
-
     private final LdapContextSource ldapContextSource;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
+    private boolean convertSubErrorCodesToExceptions;
 
     public MciActiveDirectoryLdapAuthenticationProvider(final LdapContextSource ldapContextSource, PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService) {
         this.ldapContextSource = ldapContextSource;
-        this.url = String.join(",",ldapContextSource.getUrls());
+        this.url = String.join(",", ldapContextSource.getUrls());
         this.domain = ldapContextSource.getBaseLdapPathAsString();
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptService = loginAttemptService;
@@ -84,7 +79,7 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
         String password = (String) auth.getCredentials();
         DirContext ctx = null;
         try {
-            if (loginAttemptService.isBlocked(username)){
+            if (loginAttemptService.isBlocked(username)) {
                 loginAttemptService.loginFailed(username);
                 throw new AuthenticationException("User has been blocked for 20 minutes.");
             }
@@ -284,8 +279,8 @@ public class MciActiveDirectoryLdapAuthenticationProvider extends AbstractLdapAu
 
     @Override
     public Authentication createSuccessfulAuthentication(UsernamePasswordAuthenticationToken authentication,
-                                                            UserDetails user) {
-        Object password =  authentication.getCredentials();
+                                                         UserDetails user) {
+        Object password = authentication.getCredentials();
         UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(user, password,
                 new NullAuthoritiesMapper().mapAuthorities(user.getAuthorities()));
         result.setDetails(authentication.getDetails());

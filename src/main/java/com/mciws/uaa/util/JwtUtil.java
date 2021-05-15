@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -42,9 +42,9 @@ public class JwtUtil {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
     }
 
-    private Boolean isTokenExpired(String token) {
+    private boolean isTokenExpired(String token) {
 //        return extractExpiration(token).before(Calendar.getInstance().getTime());
-        return onlineUserRepository.findById(token) != null;
+        return onlineUserRepository.findById(token) == null;
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -64,9 +64,9 @@ public class JwtUtil {
     public boolean validateToken(String token, UserDetails userDetails) {
         boolean isValidate = false;
         final String username = extractUsername(token);
-        if (username.equals(userDetails.getUsername()) && onlineUserRepository.findById(token) != null) {
+        if (username.equals(userDetails.getUsername()) && !isTokenExpired(token)) {
             isValidate = true;
-            onlineUserRepository.save(new OnlineUser(token, userDetails));
+            onlineUserRepository.findById(token).ifPresent(onlineUser -> onlineUserRepository.save(onlineUser));
         }
         return isValidate;
     }

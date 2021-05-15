@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConf
 import org.springframework.context.annotation.Configuration;
 
 @SpringBootApplication(exclude = {
-		EmbeddedLdapAutoConfiguration.class
+        EmbeddedLdapAutoConfiguration.class
 })
 @Configuration
 public class UAAApplication {

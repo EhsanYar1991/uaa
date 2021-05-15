@@ -27,7 +27,7 @@ public class MciFilterBasedLdapUserSearch implements LdapUserSearch {
 
     private final SearchControls searchControls = new SearchControls();
 
-    private String searchBase = "";
+    private String searchBase ;
 
 
     private String searchFilter;
@@ -38,13 +38,21 @@ public class MciFilterBasedLdapUserSearch implements LdapUserSearch {
         try {
             this.searchFilter = (String) contextSource.getReadOnlyContext().getEnvironment().get(FILTER_SEARCH_KEY);
         } catch (NamingException e) {
-            logger.info("Search fillter must be determined");
+            logger.error("Search filter must be determined");
         }
         setSearchSubtree(true);
-        if (searchBase.length() == 0) {
-            logger.info(
-                    "SearchBase not set. Searches will be performed from the root: " + contextSource.getBaseLdapPath());
+        this.searchBase = "";
+    }
+    public MciFilterBasedLdapUserSearch(LdapContextSource contextSource, String searchBase) {
+        Assert.notNull(contextSource, "contextSource must not be null");
+        this.contextSource = contextSource;
+        try {
+            this.searchFilter = (String) contextSource.getReadOnlyContext().getEnvironment().get(FILTER_SEARCH_KEY);
+        } catch (NamingException e) {
+            logger.error("Search filter must be determined");
         }
+        setSearchSubtree(true);
+        this.searchBase = searchBase;
     }
 
 
@@ -54,9 +62,8 @@ public class MciFilterBasedLdapUserSearch implements LdapUserSearch {
         SpringSecurityLdapTemplate template = new SpringSecurityLdapTemplate(this.contextSource);
         template.setSearchControls(this.searchControls);
         try {
-            return template.searchForSingleEntry(this.searchBase, this.searchFilter, new String[] { username });
-        }
-        catch (IncorrectResultSizeDataAccessException ex) {
+            return template.searchForSingleEntry(this.searchBase, this.searchFilter, new String[]{username});
+        } catch (IncorrectResultSizeDataAccessException ex) {
             if (ex.getActualSize() == 0) {
                 throw new UsernameNotFoundException("User " + username + " not found in directory.");
             }

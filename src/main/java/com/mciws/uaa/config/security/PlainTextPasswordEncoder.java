@@ -6,7 +6,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public final class PlainTextPasswordEncoder implements PasswordEncoder {
 
 
-
     public String encode(final String password) {
         return password;
     }
